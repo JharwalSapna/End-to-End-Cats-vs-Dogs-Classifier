@@ -1,0 +1,95 @@
+# CD Pipeline - Deploy to Kubernetes
+# Runs after successful CI on main branch
+
+name: CD Pipeline
+
+on:
+  workflow_run:
+    workflows: ["CI Pipeline"]
+    types: [completed]
+    branches: [main]
+
+env:
+  DOCKER_IMAGE: catsdogs-classifier
+  KUBE_NAMESPACE: default
+
+jobs:
+  deploy:
+    name: Deploy to Kubernetes
+    runs-on: ubuntu-latest
+    if: ${{ github.event.workflow_run.conclusion == 'success' }}
+    
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+      
+      - name: Set up kubectl
+        uses: azure/setup-kubectl@v3
+        with:
+          version: 'v1.28.0'
+      
+      - name: Configure kubeconfig
+        run: |
+          mkdir -p $HOME/.kube
+          echo "${{ secrets.KUBE_CONFIG }}" | base64 -d > $HOME/.kube/config
+          chmod 600 $HOME/.kube/config
+      
+      - name: Update deployment image
+        run: |
+          sed -i "s|image:.*|image: ${{ secrets.DOCKER_USERNAME }}/${{ env.DOCKER_IMAGE }}:${{ github.sha }}|g" k8s/deployment.yaml
+      
+      - name: Deploy to Kubernetes
+        run: |
+          kubectl apply -f k8s/deployment.yaml
+          kubectl apply -f k8s/service.yaml
+      
+      - name: Wait for rollout
+        run: |
+          kubectl rollout status deployment/catsdogs-classifier -n ${{ env.KUBE_NAMESPACE }} --timeout=120s
+      
+      - name: Get service info
+        run: |
+          kubectl get pods -n ${{ env.KUBE_NAMESPACE }} -l app=catsdogs-classifier
+          kubectl get svc -n ${{ env.KUBE_NAMESPACE }} catsdogs-classifier-service
+
+  smoke-test:
+    name: Post-Deploy Smoke Tests
+    needs: deploy
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+      
+      - name: Set up kubectl
+        uses: azure/setup-kubectl@v3
+        with:
+          version: 'v1.28.0'
+      
+      - name: Configure kubeconfig
+        run: |
+          mkdir -p $HOME/.kube
+          echo "${{ secrets.KUBE_CONFIG }}" | base64 -d > $HOME/.kube/config
+          chmod 600 $HOME/.kube/config
+      
+      - name: Get service URL
+        id: get-url
+        run: |
+          # For NodePort service, get the node IP and port
+          NODE_PORT=$(kubectl get svc catsdogs-classifier-service -o jsonpath='{.spec.ports[0].nodePort}')
+          # For local testing, use port-forward
+          kubectl port-forward svc/catsdogs-classifier-service 8000:80 &
+          sleep 5
+          echo "SERVICE_URL=http://localhost:8000" >> $GITHUB_OUTPUT
+      
+      - name: Run smoke tests
+        run: |
+          chmod +x scripts/smoke_test.sh
+          SERVICE_URL=${{ steps.get-url.outputs.SERVICE_URL }} ./scripts/smoke_test.sh
+      
+      - name: Report status
+        if: failure()
+        run: |
+          echo "Smoke tests failed! Rolling back..."
+          kubectl rollout undo deployment/catsdogs-classifier -n ${{ env.KUBE_NAMESPACE }}
+          exit 1

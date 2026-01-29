@@ -1,0 +1,28 @@
+# Data (raw data, not DVC tracking files)
+data/raw/
+*.h5
+*.pkl
+
+
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+.env
+venv/
+.venv/
+
+# IDE
+.idea/
+.vscode/
+*.swp
+
+# MLflow
+mlruns/
+
+# Docker
+*.log
+
+# OS
+.DS_Store
+Thumbs.db

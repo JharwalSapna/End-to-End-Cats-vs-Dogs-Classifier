@@ -1,0 +1,36 @@
+# Ignore Python artifacts
+**/__pycache__
+**/*.pyc
+**/*.pyo
+**/*.pyd
+.Python
+**/.pytest_cache
+
+# Ignore virtual environments
+venv/
+.venv/
+env/
+
+# Ignore data and model files for smaller image
+# (models should be copied in, but not training data)
+data/
+
+# Ignore MLflow runs
+mlruns/
+
+# Ignore Git
+.git/
+.gitignore
+.dvc/
+
+# Ignore IDE settings
+.idea/
+.vscode/
+*.swp
+
+# Ignore documentation
+*.md
+MLOPS_Assignment2.pdf
+
+# Ignore test files (optional - remove if you want tests in container)
+# tests/

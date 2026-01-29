@@ -1,0 +1,22 @@
+stages:
+  prepare:
+    cmd: python3 src/prepare.py
+    deps:
+      - src/prepare.py
+    outs:
+      - data/raw
+
+  train:
+    cmd: python3 src/train.py
+    deps:
+      - src/train.py
+      - data/raw
+      - src/model.py
+      - src/data_preprocessing.py
+    metrics:
+      - models/metrics.json:
+          cache: false
+    outs:
+      - models/cats_dogs_model.npz
+      - models/training_curves.png
+      - models/confusion_matrix.png
