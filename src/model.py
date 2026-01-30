@@ -86,58 +86,78 @@ class SimpleCNN:
         """Get probability of class 1 (dog)."""
         return self.forward(x)
     
-    def compute_loss(self, y_true, y_pred):
-        """Binary cross-entropy loss."""
+    def compute_loss(self, y_true, y_pred, reg_lambda=0, weights=None):
+        """Binary cross-entropy loss with L2 regularization."""
         y_pred = np.clip(y_pred, 1e-7, 1 - 1e-7)
-        return -np.mean(y_true * np.log(y_pred) + (1 - y_true) * np.log(1 - y_pred))
+        bce_loss = -np.mean(y_true * np.log(y_pred) + (1 - y_true) * np.log(1 - y_pred))
+        
+        if reg_lambda > 0 and weights is not None:
+            l2_loss = 0
+            for w in weights.values():
+                l2_loss += np.sum(w**2)
+            return bce_loss + 0.5 * reg_lambda * l2_loss
+            
+        return bce_loss
     
-    def train_step(self, x, y, learning_rate=0.001):
-        """One training step with gradient descent."""
+    def train_step(self, x, y, learning_rate=0.001, reg_lambda=0.001, dropout_rate=0.2):
+        """One training step with gradient descent, momentum, dropout, and L2 regularization."""
         batch_size = x.shape[0]
         x_flat = x.reshape(batch_size, -1)
         
-        # Forward pass (re-using forward logic to keep gradients consistent)
+        # Forward pass with Dropout
         z1 = np.dot(x_flat, self.weights['h1']) + self.biases['h1']
         a1 = self.relu(z1)
+        # Dropout 1
+        mask1 = (np.random.rand(*a1.shape) < (1 - dropout_rate)) / (1 - dropout_rate)
+        a1 *= mask1
         
         z2 = np.dot(a1, self.weights['h2']) + self.biases['h2']
         a2 = self.relu(z2)
+        # Dropout 2
+        mask2 = (np.random.rand(*a2.shape) < (1 - dropout_rate)) / (1 - dropout_rate)
+        a2 *= mask2
         
         z3 = np.dot(a2, self.weights['h3']) + self.biases['h3']
         a3 = self.relu(z3)
+        # Dropout 3
+        mask3 = (np.random.rand(*a3.shape) < (1 - dropout_rate)) / (1 - dropout_rate)
+        a3 *= mask3
         
         z4 = np.dot(a3, self.weights['out']) + self.biases['out']
         y_pred = self.sigmoid(z4).flatten()
         
         # Loss
-        loss = self.compute_loss(y, y_pred)
+        loss = self.compute_loss(y, y_pred, reg_lambda, self.weights)
         
         # Backward pass
         # Output layer gradients
         d_z4 = (y_pred - y).reshape(-1, 1) / batch_size
         
-        d_w_out = np.dot(a3.T, d_z4)
+        d_w_out = np.dot(a3.T, d_z4) + reg_lambda * self.weights['out']
         d_b_out = np.sum(d_z4, axis=0)
         
         # Hidden layer 3 gradients
         d_a3 = np.dot(d_z4, self.weights['out'].T)
+        d_a3 *= mask3 # Apply dropout mask
         d_z3 = d_a3 * (z3 > 0)
         
-        d_w_h3 = np.dot(a2.T, d_z3)
+        d_w_h3 = np.dot(a2.T, d_z3) + reg_lambda * self.weights['h3']
         d_b_h3 = np.sum(d_z3, axis=0)
         
         # Hidden layer 2 gradients
         d_a2 = np.dot(d_z3, self.weights['h3'].T)
+        d_a2 *= mask2 # Apply dropout mask
         d_z2 = d_a2 * (z2 > 0)
         
-        d_w_h2 = np.dot(a1.T, d_z2)
+        d_w_h2 = np.dot(a1.T, d_z2) + reg_lambda * self.weights['h2']
         d_b_h2 = np.sum(d_z2, axis=0)
         
         # Hidden layer 1 gradients
         d_a1 = np.dot(d_z2, self.weights['h2'].T)
+        d_a1 *= mask1 # Apply dropout mask
         d_z1 = d_a1 * (z1 > 0)
         
-        d_w_h1 = np.dot(x_flat.T, d_z1)
+        d_w_h1 = np.dot(x_flat.T, d_z1) + reg_lambda * self.weights['h1']
         d_b_h1 = np.sum(d_z1, axis=0)
         
         # Updates with Momentum

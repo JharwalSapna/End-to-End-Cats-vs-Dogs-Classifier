@@ -67,7 +67,7 @@ def plot_confusion_matrix(cm, save_path):
     return save_path
 
 
-def train_model(data_dir='data/raw', epochs=25, batch_size=16, learning_rate=0.0005, hidden_units=256):
+def train_model(data_dir='data/raw', epochs=25, batch_size=16, learning_rate=0.0005, hidden_units=256, reg_lambda=0.0001):
     """Main training function with MLflow tracking."""
     
     # Set up MLflow
@@ -80,6 +80,7 @@ def train_model(data_dir='data/raw', epochs=25, batch_size=16, learning_rate=0.0
         mlflow.log_param("batch_size", batch_size)
         mlflow.log_param("learning_rate", learning_rate)
         mlflow.log_param("hidden_units", hidden_units)
+        mlflow.log_param("reg_lambda", reg_lambda)
         mlflow.log_param("input_shape", "224x224x3")
         
         print("Loading dataset...")
@@ -122,7 +123,7 @@ def train_model(data_dir='data/raw', epochs=25, batch_size=16, learning_rate=0.0
             
             for batch_idx in range(n_batches):
                 batch_x, batch_y = next(batch_gen)
-                loss = model.train_step(batch_x, batch_y, learning_rate)
+                loss = model.train_step(batch_x, batch_y, learning_rate, reg_lambda=0.0, dropout_rate=0.0)
                 epoch_losses.append(loss)
             
             train_loss = np.mean(epoch_losses)

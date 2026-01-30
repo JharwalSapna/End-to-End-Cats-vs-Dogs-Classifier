@@ -1,4 +1,4 @@
 {
-    "test_accuracy": 0.6383333333333333,
-    "best_val_accuracy": 0.6333333333333333
+    "test_accuracy": 0.65875,
+    "best_val_accuracy": 0.6325
 }

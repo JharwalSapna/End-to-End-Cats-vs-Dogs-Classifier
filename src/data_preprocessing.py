@@ -55,7 +55,7 @@ def load_dataset(data_dir, target_size=(224, 224)):
     cats_dir = os.path.join(data_dir, 'cats')
     dogs_dir = os.path.join(data_dir, 'dogs')
     
-    MAX_IMAGES = 3000 # Limit to avoid OOM
+    MAX_IMAGES = 4000 # Limit to avoid OOM
     
     # Load cats (label 0)
     if os.path.exists(cats_dir):
