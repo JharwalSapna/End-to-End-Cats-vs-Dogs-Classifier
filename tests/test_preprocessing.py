@@ -12,10 +12,15 @@ import tempfile
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 from src.data_preprocessing import load_image, augment_image, split_data
+import random
 
 
 class TestLoadImage:
     """Tests for image loading function."""
+
+    def setup_method(self):
+        np.random.seed(42)
+        random.seed(42)
     
     def test_load_valid_image(self):
         """Test loading a valid image file."""
@@ -54,6 +59,10 @@ class TestLoadImage:
 
 class TestAugmentImage:
     """Tests for image augmentation function."""
+
+    def setup_method(self):
+        np.random.seed(42)
+        random.seed(42)
     
     def test_augment_preserves_shape(self):
         """Test that augmentation preserves image shape."""
@@ -76,6 +85,10 @@ class TestAugmentImage:
 
 class TestSplitData:
     """Tests for data splitting function."""
+
+    def setup_method(self):
+        np.random.seed(42)
+        random.seed(42)
     
     def test_split_correct_proportions(self):
         """Test that split follows specified ratios."""

@@ -16,6 +16,9 @@ from src.model import SimpleCNN, compute_accuracy, compute_confusion_matrix
 class TestSimpleCNN:
     """Tests for the SimpleCNN model."""
     
+    def setup_method(self):
+        np.random.seed(42)
+    
     def test_model_initialization(self):
         """Test that model initializes with correct shapes."""
         model = SimpleCNN(input_shape=(224, 224, 3), hidden_units=64)
