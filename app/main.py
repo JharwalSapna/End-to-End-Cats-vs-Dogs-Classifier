@@ -116,8 +116,8 @@ def preprocess_image(image_data: str) -> np.ndarray:
         # Resize to expected size
         img = img.resize((224, 224), Image.BILINEAR)
         
-        # Convert to numpy array and normalize
-        img_array = np.array(img, dtype=np.float32) / 255.0
+        # Convert to numpy array and normalize to [-1, 1]
+        img_array = (np.array(img, dtype=np.float32) / 127.5) - 1.0
         
         # Add batch dimension
         return np.expand_dims(img_array, axis=0)
@@ -201,7 +201,7 @@ async def predict(request: PredictionRequest, req: Request):
     except Exception as e:
         REQUEST_COUNT.labels(status='error').inc()
         logger.error(f"Prediction failed: {e}")
-        raise HTTPException(status_code=500, detail="Prediction failed")
+        raise HTTPException(status_code=500, detail=f"Prediction failed: {str(e)}")
 
 
 @app.get("/metrics")
