@@ -25,6 +25,11 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v4
       
+      - name: Debug Info
+        run: |
+          echo "Current SHA: ${{ github.sha }}"
+          echo "Workflow Run Head SHA: ${{ github.event.workflow_run.head_sha }}"
+      
       - name: Lowercase Repo Name
         run: |
           echo "REPO_LC=${GITHUB_REPOSITORY,,}" >> $GITHUB_ENV
@@ -38,8 +43,8 @@ jobs:
 
       - name: Pull Docker image
         run: |
-          docker pull ghcr.io/${{ env.REPO_LC }}:${{ github.sha }}
-          docker tag ghcr.io/${{ env.REPO_LC }}:${{ github.sha }} catsdogs-classifier:latest
+          docker pull ghcr.io/${{ env.REPO_LC }}:${{ github.event.workflow_run.head_sha }}
+          docker tag ghcr.io/${{ env.REPO_LC }}:${{ github.event.workflow_run.head_sha }} catsdogs-classifier:latest
 
       - name: Create k8s Kind Cluster
         uses: helm/kind-action@v1.9.0
