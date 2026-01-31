@@ -1,4 +1,4 @@
-# End-to-End Cats vs Dogs Classifier
+# Image Classifier
 
 This project implements a production-grade MLOps pipeline for binary image classification (Cats vs Dogs). It demonstrates an end-to-end workflow including data versioning, model training with experiment tracking, API deployment, containerization, and comprehensive monitoring.
 
